@@ -42,7 +42,7 @@ Here are some examples showing typical use:
 config := xrpl.ClientConfig{
   URL: "wss://s.altnet.rippletest.net:51233",
 }
-client := xrpl.NewClient(config)
+client, _ := xrpl.NewClient(config)
 err := client.Ping([]byte("PING"))
 if err != nil {
   panic(err)
