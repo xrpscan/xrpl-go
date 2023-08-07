@@ -4,12 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
 
 func (c *Client) handlePong(message string) error {
-	fmt.Println("PONG response:", message)
+	// log.Println("PONG:", message)
+	c.connection.SetReadDeadline(time.Now().Add(c.config.ReadTimeout * time.Second))
+	c.connection.SetWriteDeadline(time.Now().Add(c.config.WriteTimeout * time.Second))
 	return nil
 }
 
@@ -19,8 +22,10 @@ func (c *Client) handleResponse() error {
 			break
 		}
 		messageType, message, err := c.connection.ReadMessage()
-		if err != nil && websocket.IsCloseError(err) {
-			log.Println("XRPL read error: ", err)
+		if err != nil {
+			log.Println("WS read error:", err)
+			c.Reconnect()
+			break
 		}
 
 		switch messageType {
@@ -38,7 +43,7 @@ func (c *Client) handleResponse() error {
 func (c *Client) resolveStream(message []byte) {
 	var m BaseResponse
 	if err := json.Unmarshal(message, &m); err != nil {
-		fmt.Println("json.Unmarshal error: ", err)
+		log.Println("json.Unmarshal error: ", err)
 	}
 
 	switch m["type"] {
