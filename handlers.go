@@ -30,6 +30,7 @@ func (c *Client) handleResponse() error {
 
 		switch messageType {
 		case websocket.CloseMessage:
+			log.Println("WS websocket.CloseMessage received")
 			return nil
 		case websocket.TextMessage:
 			c.resolveStream(message)
@@ -73,14 +74,14 @@ func (c *Client) resolveStream(message []byte) {
 
 	case StreamResponseType(StreamTypeResponse):
 		requestId := fmt.Sprintf("%v", m["id"])
+		c.mutex.Lock()
 		ch, ok := c.requestQueue[requestId]
 		if ok {
-			c.mutex.Lock()
 			ch <- m
 			delete(c.requestQueue, requestId)
 			close(ch)
-			c.mutex.Unlock()
 		}
+		c.mutex.Unlock()
 
 	default:
 		c.StreamDefault <- message
