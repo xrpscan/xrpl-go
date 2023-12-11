@@ -1,5 +1,10 @@
 package models
 
+import (
+	"fmt"
+	"strings"
+)
+
 // Set of common fields for every transaction
 type BaseTransaction struct {
 	Account            string
@@ -393,4 +398,26 @@ type Transaction struct {
 	TransactionSignerListSet
 	TransactionTicketCreate
 	TransactionTrustSet
+}
+
+/*
+* CTID spec: https://github.com/XRPLF/XRPL-Standards/tree/master/XLS-0037d-concise-transaction-identifier-ctid
+ */
+type CTID struct {
+	LeadIn           uint64
+	LedgerIndex      uint64
+	TransactionIndex uint64
+	NetworkId        uint64
+}
+
+/*
+* Encode CTID struct to XLS-37 CTID
+ */
+func (c *CTID) Encode() string {
+	if c.LeadIn == 0 {
+		c.LeadIn = uint64(0xC0000000)
+	}
+	cti := (c.LeadIn+c.LedgerIndex)<<32 + c.TransactionIndex<<16 + c.NetworkId
+	ctid := fmt.Sprintf("%x", cti)
+	return strings.ToUpper(ctid)
 }
