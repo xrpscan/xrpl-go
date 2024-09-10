@@ -25,7 +25,7 @@ func UnixTimeToRippleTime(unixTime int64) int64 {
 // Convert a Ripple timestamp to an ISO8601 time.
 func RippleTimeToISOTime(rippleTime int64) string {
 	unixTime := RippleTimeToUnixTime(rippleTime)
-	return time.Unix(unixTime, 0).Format(time.RFC3339)
+	return time.Unix(unixTime, 0).UTC().Format(time.RFC3339)
 }
 
 // Convert an ISO8601 timestamp to a Ripple timestamp.
