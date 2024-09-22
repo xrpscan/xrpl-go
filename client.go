@@ -23,10 +23,10 @@ type ClientConfig struct {
 	Passphrase         byte
 	Proxy              byte
 	ProxyAuthorization byte
-	ReadTimeout        time.Duration
-	WriteTimeout       time.Duration
-	HeartbeatInterval  time.Duration
-	QueueCapacity      int
+	ReadTimeout        time.Duration // Default is 60 seconds
+	WriteTimeout       time.Duration // Default is 60 seconds
+	HeartbeatInterval  time.Duration // Default is 5 seconds
+	QueueCapacity      int           // Default is 128
 }
 
 type Client struct {
@@ -76,10 +76,10 @@ func (config *ClientConfig) Validate() error {
 
 func NewClient(config ClientConfig) *Client {
 	if config.ReadTimeout == 0 {
-		config.ReadTimeout = 20
+		config.ReadTimeout = 60
 	}
 	if config.WriteTimeout == 0 {
-		config.WriteTimeout = 20
+		config.WriteTimeout = 60
 	}
 	if config.HeartbeatInterval == 0 {
 		config.HeartbeatInterval = 5
@@ -195,12 +195,12 @@ func (c *Client) Close() error {
 
 	err := c.connection.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	if err != nil {
-		log.Println("WS write error: ", err)
+		log.Println("WS write error:", err)
 		return err
 	}
 	err = c.connection.Close()
 	if err != nil {
-		log.Println("WS close error: ", err)
+		log.Println("WS close error:", err)
 		return err
 	}
 	return nil
