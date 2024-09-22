@@ -132,6 +132,7 @@ func (c *Client) NewConnection() (*websocket.Conn, error) {
 	c.closed = false
 
 	// Set connection handlers and heartbeat
+	c.connection.SetReadDeadline(time.Now().Add(c.config.ReadTimeout * time.Second))
 	c.connection.SetPongHandler(c.handlePong)
 	go c.handleResponse()
 	go c.heartbeat()
@@ -161,7 +162,8 @@ func (c *Client) Ping(message []byte) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	// log.Println("PING:", string(message))
-	if err := c.connection.WriteMessage(websocket.PingMessage, message); err != nil {
+	newDeadline := time.Now().Add(c.config.WriteTimeout * time.Second)
+	if err := c.connection.WriteControl(websocket.PingMessage, message, newDeadline); err != nil {
 		return err
 	}
 	return nil
