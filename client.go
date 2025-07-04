@@ -76,13 +76,13 @@ func (config *ClientConfig) Validate() error {
 
 func NewClient(config ClientConfig) *Client {
 	if config.ReadTimeout == 0 {
-		config.ReadTimeout = 60
+		config.ReadTimeout = 60 * time.Second
 	}
 	if config.WriteTimeout == 0 {
-		config.WriteTimeout = 60
+		config.WriteTimeout = 60 * time.Second
 	}
 	if config.HeartbeatInterval == 0 {
-		config.HeartbeatInterval = 5
+		config.HeartbeatInterval = 5 * time.Second
 	}
 
 	if config.QueueCapacity == 0 {
