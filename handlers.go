@@ -11,8 +11,8 @@ import (
 
 func (c *Client) handlePong(message string) error {
 	// log.Println("PONG:", message)
-	c.connection.SetReadDeadline(time.Now().Add(c.config.ReadTimeout * time.Second))
-	c.connection.SetWriteDeadline(time.Now().Add(c.config.WriteTimeout * time.Second))
+	c.connection.SetReadDeadline(time.Now().Add(c.config.ReadTimeout))
+	c.connection.SetWriteDeadline(time.Now().Add(c.config.WriteTimeout))
 	return nil
 }
 

@@ -9,7 +9,7 @@ import (
 // read and write deadline into the future.
 func (c *Client) heartbeat() {
 	// log.Println("INF: Heartbeat started")
-	ticker := time.NewTicker(c.config.HeartbeatInterval * time.Second)
+	ticker := time.NewTicker(c.config.HeartbeatInterval)
 	for {
 		select {
 		case <-c.heartbeatDone:

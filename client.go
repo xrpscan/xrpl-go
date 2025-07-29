@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"math"
 	"net/http"
 	"strconv"
 	"sync"
@@ -57,18 +56,13 @@ func (config *ClientConfig) Validate() error {
 		return errors.New("cannot create a new connection with an empty URL")
 	}
 
-	if config.ReadTimeout < 0 ||
-		config.ReadTimeout <= config.HeartbeatInterval ||
-		config.ReadTimeout >= math.MaxInt32 {
+	if config.ReadTimeout < 0*time.Second || config.ReadTimeout >= 1*time.Hour {
 		return fmt.Errorf("connection read timeout out of bounds: %d", config.ReadTimeout)
 	}
-	if config.WriteTimeout < 0 ||
-		config.WriteTimeout <= config.HeartbeatInterval ||
-		config.WriteTimeout >= math.MaxInt32 {
+	if config.WriteTimeout < 0*time.Second || config.WriteTimeout >= 1*time.Hour {
 		return fmt.Errorf("connection write timeout out of bounds: %d", config.WriteTimeout)
 	}
-	if config.HeartbeatInterval < 0 ||
-		config.HeartbeatInterval >= math.MaxInt32 {
+	if config.HeartbeatInterval < 0*time.Second || config.HeartbeatInterval >= 1*time.Hour {
 		return fmt.Errorf("connection heartbeat interval out of bounds: %d", config.HeartbeatInterval)
 	}
 
@@ -76,13 +70,13 @@ func (config *ClientConfig) Validate() error {
 }
 
 func NewClient(config ClientConfig) *Client {
-	if config.ReadTimeout == 0 {
+	if config.ReadTimeout == 0*time.Second {
 		config.ReadTimeout = 60 * time.Second
 	}
-	if config.WriteTimeout == 0 {
+	if config.WriteTimeout == 0*time.Second {
 		config.WriteTimeout = 60 * time.Second
 	}
-	if config.HeartbeatInterval == 0 {
+	if config.HeartbeatInterval == 0*time.Second {
 		config.HeartbeatInterval = 5 * time.Second
 	}
 
@@ -134,7 +128,8 @@ func (c *Client) NewConnection() (*websocket.Conn, error) {
 	c.closed = false
 
 	// Set connection handlers and heartbeat
-	c.connection.SetReadDeadline(time.Now().Add(c.config.ReadTimeout * time.Second))
+	c.connection.SetReadDeadline(time.Now().Add(c.config.ReadTimeout))
+	c.connection.SetWriteDeadline(time.Now().Add(c.config.WriteTimeout))
 	c.connection.SetPongHandler(c.handlePong)
 	go c.handleResponse()
 	go c.heartbeat()
@@ -164,7 +159,7 @@ func (c *Client) Ping(message []byte) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	// log.Println("PING:", string(message))
-	newDeadline := time.Now().Add(c.config.WriteTimeout * time.Second)
+	newDeadline := time.Now().Add(c.config.WriteTimeout)
 	if err := c.connection.WriteControl(websocket.PingMessage, message, newDeadline); err != nil {
 		return err
 	}
