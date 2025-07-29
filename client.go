@@ -33,6 +33,7 @@ type Client struct {
 	config              ClientConfig
 	connection          *websocket.Conn
 	heartbeatDone       chan bool
+	handlerDone         chan bool
 	closed              bool
 	mutex               sync.Mutex
 	response            *http.Response
@@ -96,6 +97,7 @@ func NewClient(config ClientConfig) *Client {
 	client := &Client{
 		config:              config,
 		heartbeatDone:       make(chan bool),
+		handlerDone:         make(chan bool),
 		StreamLedger:        make(chan []byte, config.QueueCapacity),
 		StreamTransaction:   make(chan []byte, config.QueueCapacity),
 		StreamValidation:    make(chan []byte, config.QueueCapacity),
@@ -191,7 +193,17 @@ func (c *Client) Close() error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	c.closed = true
-	c.heartbeatDone <- true
+
+	// Signal both goroutines to stop
+	select {
+	case c.heartbeatDone <- true:
+	default:
+	}
+
+	select {
+	case c.handlerDone <- true:
+	default:
+	}
 
 	err := c.connection.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	if err != nil {

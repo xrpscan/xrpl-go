@@ -18,14 +18,20 @@ func (c *Client) handlePong(message string) error {
 
 func (c *Client) handleResponse() error {
 	for {
-		if c.closed {
-			break
+		select {
+		case <-c.handlerDone:
+			return nil
+		default:
+			if c.closed {
+				return nil
+			}
 		}
+
 		messageType, message, err := c.connection.ReadMessage()
 		if err != nil {
 			log.Println("WS read error:", err)
 			c.Reconnect()
-			break
+			return nil
 		}
 
 		switch messageType {
@@ -38,7 +44,6 @@ func (c *Client) handleResponse() error {
 		default:
 		}
 	}
-	return nil
 }
 
 func (c *Client) resolveStream(message []byte) {
