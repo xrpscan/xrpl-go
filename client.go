@@ -35,6 +35,7 @@ type Client struct {
 	handlerDone         chan bool
 	closed              bool
 	mutex               sync.Mutex
+	wg                  sync.WaitGroup
 	response            *http.Response
 	StreamLedger        chan []byte
 	StreamTransaction   chan []byte
@@ -131,6 +132,7 @@ func (c *Client) NewConnection() (*websocket.Conn, error) {
 	c.connection.SetReadDeadline(time.Now().Add(c.config.ReadTimeout))
 	c.connection.SetWriteDeadline(time.Now().Add(c.config.WriteTimeout))
 	c.connection.SetPongHandler(c.handlePong)
+	c.wg.Add(2)
 	go c.handleResponse()
 	go c.heartbeat()
 	return c.connection, nil
@@ -139,6 +141,9 @@ func (c *Client) NewConnection() (*websocket.Conn, error) {
 func (c *Client) Reconnect() error {
 	// Close old websocket connection
 	c.Close()
+
+	// Wait for all goroutines to finish
+	c.wg.Wait()
 
 	// Recreate stream channels
 	c.mutex.Lock()

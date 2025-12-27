@@ -17,6 +17,7 @@ func (c *Client) handlePong(message string) error {
 }
 
 func (c *Client) handleResponse() error {
+	defer c.wg.Done()
 	for {
 		select {
 		case <-c.handlerDone:
