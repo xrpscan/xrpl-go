@@ -70,6 +70,9 @@ func (c *Client) Request(req BaseRequest) (BaseResponse, error) {
 	c.requestQueue[requestId] = ch
 	err = c.connection.WriteMessage(websocket.TextMessage, data)
 	if err != nil {
+		delete(c.requestQueue, requestId)
+		close(ch)
+		c.mutex.Unlock()
 		return nil, err
 	}
 	c.mutex.Unlock()
