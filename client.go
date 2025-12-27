@@ -140,6 +140,19 @@ func (c *Client) Reconnect() error {
 	// Close old websocket connection
 	c.Close()
 
+	// Recreate stream channels
+	c.mutex.Lock()
+	c.StreamLedger = make(chan []byte, c.config.QueueCapacity)
+	c.StreamTransaction = make(chan []byte, c.config.QueueCapacity)
+	c.StreamValidation = make(chan []byte, c.config.QueueCapacity)
+	c.StreamManifest = make(chan []byte, c.config.QueueCapacity)
+	c.StreamPeerStatus = make(chan []byte, c.config.QueueCapacity)
+	c.StreamConsensus = make(chan []byte, c.config.QueueCapacity)
+	c.StreamPathFind = make(chan []byte, c.config.QueueCapacity)
+	c.StreamServer = make(chan []byte, c.config.QueueCapacity)
+	c.StreamDefault = make(chan []byte, c.config.QueueCapacity)
+	c.mutex.Unlock()
+
 	// Create a new websocket connection
 	_, err := c.NewConnection()
 	if err != nil {
@@ -199,6 +212,17 @@ func (c *Client) Close() error {
 	case c.handlerDone <- true:
 	default:
 	}
+
+	// Close all stream channels to prevent blocking
+	close(c.StreamLedger)
+	close(c.StreamTransaction)
+	close(c.StreamValidation)
+	close(c.StreamManifest)
+	close(c.StreamPeerStatus)
+	close(c.StreamConsensus)
+	close(c.StreamPathFind)
+	close(c.StreamServer)
+	close(c.StreamDefault)
 
 	err := c.connection.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	if err != nil {
