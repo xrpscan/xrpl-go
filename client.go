@@ -145,7 +145,7 @@ func (c *Client) Reconnect() error {
 	// Wait for all goroutines to finish
 	c.wg.Wait()
 
-	// Recreate stream channels
+	// Recreate stream channels and clean up request queue
 	c.mutex.Lock()
 	c.StreamLedger = make(chan []byte, c.config.QueueCapacity)
 	c.StreamTransaction = make(chan []byte, c.config.QueueCapacity)
@@ -156,6 +156,12 @@ func (c *Client) Reconnect() error {
 	c.StreamPathFind = make(chan []byte, c.config.QueueCapacity)
 	c.StreamServer = make(chan []byte, c.config.QueueCapacity)
 	c.StreamDefault = make(chan []byte, c.config.QueueCapacity)
+
+	// Clean up pending requests to prevent goroutine leaks
+	for id, ch := range c.requestQueue {
+		close(ch)
+		delete(c.requestQueue, id)
+	}
 	c.mutex.Unlock()
 
 	// Create a new websocket connection
@@ -228,6 +234,12 @@ func (c *Client) Close() error {
 	close(c.StreamPathFind)
 	close(c.StreamServer)
 	close(c.StreamDefault)
+
+	// Clean up pending requests to prevent goroutine leaks
+	for id, ch := range c.requestQueue {
+		close(ch)
+		delete(c.requestQueue, id)
+	}
 
 	err := c.connection.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 	if err != nil {
