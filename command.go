@@ -2,6 +2,8 @@ package xrpl
 
 import (
 	"encoding/json"
+	"errors"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -77,6 +79,15 @@ func (c *Client) Request(req BaseRequest) (BaseResponse, error) {
 	}
 	c.mutex.Unlock()
 
-	res := <-ch
-	return res, nil
+	// Add timeout to prevent channel and goroutine leak
+	select {
+	case res := <-ch:
+		return res, nil
+	case <-time.After(c.config.ReadTimeout):
+		c.mutex.Lock()
+		delete(c.requestQueue, requestId)
+		close(ch)
+		c.mutex.Unlock()
+		return nil, errors.New("request timeout")
+	}
 }
